@@ -1,0 +1,19 @@
+{
+  "name": "trading-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "asciichart": "^1.5.25",
+    "ccxt": "^4.2.77",
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "moment": "^2.30.1"
+  }
+}
