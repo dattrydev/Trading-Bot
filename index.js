@@ -1,7 +1,6 @@
 const ccxt = require('ccxt');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const fs = require('fs');
 
 const binance = new ccxt.binance({
     apiKey: dotenv.config().parsed.API_KEY,
@@ -11,32 +10,14 @@ const binance = new ccxt.binance({
 binance.setSandboxMode(true);
 
 async function printBalance(btcPrice) {
-    try {
         const balance = await binance.fetchBalance();
         const total = balance.total;
-        console.log(`Balance: ${total.BTC} BTC, ${total.USDT} USDT`);
-        console.log(`Total USD: ${(total.BTC - 1) * btcPrice + total.USDT}. \n`);
-
-        // Write balance data to trade_log.txt
-        const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-        const balanceInfo = `${timestamp}: Total balance: ${total.BTC} BTC, ${total.USDT} USDT\n`;
-
-        while (true) {
-            try {
-                fs.appendFileSync('trade_log.txt', balanceInfo);
-                break; // Exit the loop if writing succeeds
-            } catch (error) {
-                // Retry after a short delay if the file is busy
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-    } catch (error) {
-        console.error('Error occurred while printing balance:', error);
-    }
+        console.log(`Balance: BTC ${total.BTC} BTC, USDT: ${total.USDT}`);
+        console.log(`Total USDT: ${(total.BTC - 1) * btcPrice + total.USDT}`);
+        console.log('\n');
 }
 
 async function tick() {
-    try {
         // Fetch OHLCV data (candlestick data) for the BTC/USDT trading pair with 1-minute interval
         const prices = await binance.fetchOHLCV('BTC/USDT', '1m', undefined, 5);
         const bPrices = prices.map(price => {
@@ -60,28 +41,12 @@ async function tick() {
         const TRADE_SIDE = 100;
         const quantity = TRADE_SIDE / lastPrice;
 
-        console.log(`Average price: ${averagePrice}, Last price: ${lastPrice}`);
+        console.log(`Average price: ${averagePrice}. Last price: ${lastPrice}`);
         const order = await binance.createMarketOrder('BTC/USDT', direction, quantity);
-        console.log(`${moment().format('YYYY-MM-DD HH:mm:ss')}: ${direction} ${quantity} BTC at ${lastPrice}`);
+        console.log(`${moment().format()}: ${direction} ${quantity} BTC at ${lastPrice}`);
 
-        // Write order data to trade_log.txt
-        const orderInfo = `${moment().format('YYYY-MM-DD HH:mm:ss')}: ${direction} ${quantity} BTC at ${lastPrice}\n`;
-
-        while (true) {
-            try {
-                fs.appendFileSync('trade_log.txt', orderInfo);
-                break; // Exit the loop if writing succeeds
-            } catch (error) {
-                // Retry after a short delay if the file is busy
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-
+        const orderInfo = `${moment().format()}: ${direction} ${quantity} BTC at ${lastPrice}\n`;
         printBalance(lastPrice);
-
-    } catch (error) {
-        console.error('Error occurred:', error);
-    }
 }
 
 async function main() {
