@@ -1,19 +1,37 @@
 {
-  "name": "trading-bot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "asciichart": "^1.5.25",
-    "ccxt": "^4.2.77",
-    "dotenv": "^16.4.5",
-    "fs": "^0.0.1-security",
-    "moment": "^2.30.1"
-  }
+    "name": "trading-bot",
+    "version": "1.0.0",
+    "description": "trade-coin",
+    "author": "Generated using Microsoft Bot Builder Yeoman generator v4.22.1",
+    "license": "MIT",
+    "main": "index.js",
+    "scripts": {
+        "start": "node ./index.js",
+        "watch": "nodemon ./index.js",
+        "lint": "eslint .",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com"
+    },
+    "dependencies": {
+        "botbuilder": "~4.22.1",
+        "dotenv": "~8.2.0",
+        "restify": "~11.1.0"
+    },
+    "devDependencies": {
+        "eslint": "^7.0.0",
+        "eslint-config-standard": "^14.1.1",
+        "eslint-plugin-import": "^2.20.2",
+        "eslint-plugin-node": "^11.1.0",
+        "eslint-plugin-promise": "^4.2.1",
+        "eslint-plugin-standard": "^4.0.1",
+        "nodemon": "^2.0.4",
+        "asciichart": "^1.5.25",
+        "ccxt": "^4.2.77",
+        "dotenv": "^16.4.5",
+        "fs": "^0.0.1-security",
+        "moment": "^2.30.1"
+    }
 }

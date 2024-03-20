@@ -1,60 +1,77 @@
-const ccxt = require('ccxt');
-const moment = require('moment');
-const dotenv = require('dotenv');
+const path = require('path');
 
-const binance = new ccxt.binance({
-    apiKey: dotenv.config().parsed.API_KEY,
-    secret: dotenv.config().parsed.SECRET_KEY,
+const dotenv = require('dotenv');
+// Import required bot configuration.
+const ENV_FILE = path.join(__dirname, '.env');
+dotenv.config({ path: ENV_FILE });
+
+const restify = require('restify');
+
+// Import required bot services.
+// See https://aka.ms/bot-services to learn more about the different parts of a bot.
+const {
+    CloudAdapter,
+    ConfigurationBotFrameworkAuthentication
+} = require('botbuilder');
+
+// This bot's main dialog.
+const { TradingBot } = require('./bot');
+
+// Create HTTP server
+const server = restify.createServer();
+server.use(restify.plugins.bodyParser());
+
+server.listen(process.env.port || process.env.PORT || 3978, () => {
+    console.log(`\n${ server.name } listening to ${ server.url }`);
+    console.log('\nGet Bot Framework Emulator: https://aka.ms/botframework-emulator');
+    console.log('\nTo talk to your bot, open the emulator select "Open Bot"');
 });
 
-binance.setSandboxMode(true);
+const botFrameworkAuthentication = new ConfigurationBotFrameworkAuthentication(process.env);
 
-async function printBalance(btcPrice) {
-        const balance = await binance.fetchBalance();
-        const total = balance.total;
-        console.log(`Balance: BTC ${total.BTC} BTC, USDT: ${total.USDT}`);
-        console.log(`Total USDT: ${(total.BTC - 1) * btcPrice + total.USDT}`);
-        console.log('\n');
-}
+// Create adapter.
+// See https://aka.ms/about-bot-adapter to learn more about how bots work.
+const adapter = new CloudAdapter(botFrameworkAuthentication);
 
-async function tick() {
-        // Fetch OHLCV data (candlestick data) for the BTC/USDT trading pair with 1-minute interval
-        const prices = await binance.fetchOHLCV('BTC/USDT', '1m', undefined, 5);
-        const bPrices = prices.map(price => {
-            return {
-                timestamp: moment(price[0]).format('YYYY-MM-DD HH:mm:ss'),
-                open: price[1],
-                high: price[2],
-                low: price[3],
-                close: price[4],
-                volume: price[5]
-            }
-        })
+// Catch-all for errors.
+const onTurnErrorHandler = async (context, error) => {
+    // This check writes out errors to console log .vs. app insights.
+    // NOTE: In production environment, you should consider logging this to Azure
+    //       application insights. See https://aka.ms/bottelemetry for telemetry
+    //       configuration instructions.
+    console.error(`\n [onTurnError] unhandled error: ${ error }`);
 
-        const averagePrice = bPrices.reduce((acc, price) => acc + price.close, 0) / bPrices.length;
-        const lastPrice = bPrices[bPrices.length - 1].close;
+    // Send a trace activity, which will be displayed in Bot Framework Emulator
+    await context.sendTraceActivity(
+        'OnTurnError Trace',
+        `${ error }`,
+        'https://www.botframework.com/schemas/error',
+        'TurnError'
+    );
 
-        console.log(bPrices.map(p => p.close), averagePrice, lastPrice);
+    // Send a message to the user
+    await context.sendActivity('The bot encountered an error or bug.');
+    await context.sendActivity('To continue to run this bot, please fix the bot source code.');
+};
 
-        const direction = lastPrice > averagePrice ? 'sell' : 'buy';
+// Set the onTurnError for the singleton CloudAdapter.
+adapter.onTurnError = onTurnErrorHandler;
 
-        const TRADE_SIDE = 100;
-        const quantity = TRADE_SIDE / lastPrice;
+// Create the main dialog.
+const myBot = new TradingBot();
 
-        console.log(`Average price: ${averagePrice}. Last price: ${lastPrice}`);
-        const order = await binance.createMarketOrder('BTC/USDT', direction, quantity);
-        console.log(`${moment().format()}: ${direction} ${quantity} BTC at ${lastPrice}`);
+// Listen for incoming requests.
+server.post('/api/messages', async (req, res) => {
+    // Route received a request to adapter for processing
+    await adapter.process(req, res, (context) => myBot.run(context));
+});
 
-        const orderInfo = `${moment().format()}: ${direction} ${quantity} BTC at ${lastPrice}\n`;
-        printBalance(lastPrice);
-}
+// Listen for Upgrade requests for Streaming.
+server.on('upgrade', async (req, socket, head) => {
+    // Create an adapter scoped to this WebSocket connection to allow storing session data.
+    const streamingAdapter = new CloudAdapter(botFrameworkAuthentication);
+    // Set onTurnError for the CloudAdapter created for each connection.
+    streamingAdapter.onTurnError = onTurnErrorHandler;
 
-async function main() {
-    while (true){
-        await tick();
-        await new Promise(resolve => setTimeout(resolve, 1000 * 60)); // 1000 * 60 milliseconds = 60 seconds
-    }
-}
-
-// Call the main function
-main();
+    await streamingAdapter.process(req, socket, head, (context) => myBot.run(context));
+});
