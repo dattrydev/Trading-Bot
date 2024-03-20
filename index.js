@@ -11,15 +11,28 @@ const binance = new ccxt.binance({
 binance.setSandboxMode(true);
 
 async function printBalance(btcPrice) {
-    const balance = await binance.fetchBalance();
-    const total = balance.total;
-    console.log(`Total balance: ${total.BTC} BTC, ${total.USDT} USDT`);
-    console.log(`Total USD: ${(total.BTC - 1) * btcPrice + total.USDT}. \n`);
+    try {
+        const balance = await binance.fetchBalance();
+        const total = balance.total;
+        console.log(`Balance: ${total.BTC} BTC, ${total.USDT} USDT`);
+        console.log(`Total USD: ${(total.BTC - 1) * btcPrice + total.USDT}. \n`);
 
-    // Write balance data to trade_log.txt
-    const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-    const balanceInfo = `${timestamp}: Total balance: ${total.BTC} BTC, ${total.USDT} USDT\n`;
-    fs.appendFileSync('trade_log.txt', balanceInfo);
+        // Write balance data to trade_log.txt
+        const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+        const balanceInfo = `${timestamp}: Total balance: ${total.BTC} BTC, ${total.USDT} USDT\n`;
+
+        while (true) {
+            try {
+                fs.appendFileSync('trade_log.txt', balanceInfo);
+                break; // Exit the loop if writing succeeds
+            } catch (error) {
+                // Retry after a short delay if the file is busy
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    } catch (error) {
+        console.error('Error occurred while printing balance:', error);
+    }
 }
 
 async function tick() {
@@ -36,7 +49,7 @@ async function tick() {
                 volume: price[5]
             }
         })
-        
+
         const averagePrice = bPrices.reduce((acc, price) => acc + price.close, 0) / bPrices.length;
         const lastPrice = bPrices[bPrices.length - 1].close;
 
@@ -53,7 +66,16 @@ async function tick() {
 
         // Write order data to trade_log.txt
         const orderInfo = `${moment().format('YYYY-MM-DD HH:mm:ss')}: ${direction} ${quantity} BTC at ${lastPrice}\n`;
-        fs.appendFileSync('trade_log.txt', orderInfo);
+
+        while (true) {
+            try {
+                fs.appendFileSync('trade_log.txt', orderInfo);
+                break; // Exit the loop if writing succeeds
+            } catch (error) {
+                // Retry after a short delay if the file is busy
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
 
         printBalance(lastPrice);
 
@@ -65,7 +87,7 @@ async function tick() {
 async function main() {
     while (true){
         await tick();
-        await new Promise(resolve => setTimeout(resolve, 1000 * 60));
+        await new Promise(resolve => setTimeout(resolve, 1000 * 60)); // 1000 * 60 milliseconds = 60 seconds
     }
 }
 
