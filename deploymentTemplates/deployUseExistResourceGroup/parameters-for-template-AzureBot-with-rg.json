@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "azureBotId": {
-      "value": ""
+      "value": "bot-cloud-uit"
     },
     "azureBotSku": {
       "value": "S1"
@@ -12,22 +12,22 @@
       "value": "global"
     },
     "botEndpoint": {
-      "value": ""
+      "value": "https://cloud-bot-service.azurewebsites.net/api/messages"
     },
     "appType": {
-      "value": "MultiTenant"
+      "value": "UserAssignedMSI"
     },
     "appId": {
-      "value": ""
+      "value": "07b09573-b5ab-4766-b3c0-d13e5224195f"
     },
     "UMSIName": {
-      "value": ""
+      "value": "cloud_id_resource"
     },
     "UMSIResourceGroupName": {
-      "value": ""
+      "value": "cloud_resource"
     },
     "tenantId": {
-      "value": ""
+      "value": "2dff09ac-2b3b-4182-9953-2b548e0d0b39"
     }
   }
 }
